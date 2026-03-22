@@ -2,7 +2,7 @@
 
 A multi-region latent dynamical-system framework for neural population analysis. Neuro-Voltron learns interpretable, region-wise vector fields while inferring directed inter-region communication from task-relevant reconstructed activity.
 
-The framework builds on ideas from [FINDR](https://arxiv.org/abs/2412.17700) (local latent vector fields) and [MR-LFADS](https://proceedings.mlr.press/v267/liu25bh.html) (multi-region sequential autoencoders), combining them into a unified model that explicitly decomposes neural variance into local dynamics, inter-region messages, known inputs, hidden inputs, and observation-side nuisance baselines.
+The framework builds on ideas from [FINDR](https://github.com/Brody-Lab/findr) (local latent vector fields) and [MR-LFADS](https://proceedings.mlr.press/v267/liu25bh.html) (multi-region sequential autoencoders), combining them into a unified model that explicitly decomposes neural variance into local dynamics, inter-region messages, known inputs, hidden inputs, and observation-side nuisance baselines.
 
 ## Key Features
 
