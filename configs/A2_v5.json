@@ -1,0 +1,49 @@
+{
+  "name": "A2_v5_ring",
+  "model": {
+    "variant_family": "A",
+    "baseline_mode": 1,
+    "latent_sizes": [2, 2, 2],
+    "encoder_hidden_size": 64,
+    "controller_hidden_size": 64,
+    "prior_hidden_sizes": [64, 64],
+    "posterior_hidden_sizes": [64, 64],
+    "message_dim": 8,
+    "hidden_input_dim": 4,
+    "message_stochastic": true,
+    "use_hidden_inputs": true,
+    "coupling_mode": "additive",
+    "message_source": "task_rate",
+    "posterior_correction_scale": 1.0
+  },
+  "loss": {
+    "beta_traj_final": 0.5,
+    "beta_message_final": 0.01,
+    "beta_hidden_final": 0.1,
+    "beta_z0_final": 0.1,
+    "beta_baseline": 0.0,
+    "warmup_epochs": 20,
+    "message_ramp_epochs": 80,
+    "hidden_ramp_epochs": 80,
+    "traj_ramp_epochs": 100,
+    "z0_ramp_epochs": 60,
+    "use_kl_floor": false,
+    "kl_floor": 0.0,
+    "n_cycles": 0,
+    "beta_inc_rate": 0.0,
+    "min_checkpoint_epoch": 200,
+    "free_bits": 0.1,
+    "aux_message_weight": 0.05
+  },
+  "optim": {
+    "learning_rate": 0.002,
+    "weight_decay": 1e-5,
+    "grad_clip_norm": 5.0,
+    "batch_size": 64,
+    "epochs": 400,
+    "lr_schedule": "cosine",
+    "lr_min_factor": 0.02,
+    "log_every": 10,
+    "seed": 0
+  }
+}

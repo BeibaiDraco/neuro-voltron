@@ -1,0 +1,51 @@
+{
+  "name": "A2_v4_ring",
+  "model": {
+    "variant_family": "A",
+    "baseline_mode": 2,
+    "latent_sizes": [2, 2, 2],
+    "encoder_hidden_size": 64,
+    "controller_hidden_size": 64,
+    "prior_hidden_sizes": [32],
+    "posterior_hidden_sizes": [32],
+    "message_dim": 8,
+    "hidden_input_dim": 4,
+    "message_stochastic": true,
+    "use_hidden_inputs": true,
+    "coupling_mode": "additive",
+    "message_source": "task_rate",
+    "posterior_correction_scale": 1.0
+  },
+  "loss": {
+    "beta_traj_final": 0.5,
+    "beta_message_final": 0.01,
+    "beta_hidden_final": 0.1,
+    "beta_z0_final": 0.1,
+    "beta_baseline": 1.0,
+    "warmup_epochs": 0,
+    "use_kl_floor": true,
+    "kl_floor": 0.01,
+    "n_cycles": 4,
+    "cycle_length": 200,
+    "ramp_fraction": 0.5,
+    "beta_inc_rate": 0.995,
+    "traj_ramp_start": 100,
+    "z0_ramp_start": 50,
+    "traj_ramp_epochs": 600,
+    "z0_ramp_epochs": 600,
+    "min_checkpoint_epoch": 400
+  },
+  "optim": {
+    "learning_rate": 0.004,
+    "weight_decay": 1e-5,
+    "grad_clip_norm": 10.0,
+    "batch_size": 128,
+    "epochs": 800,
+    "lr_schedule": "sgdr",
+    "lr_cycle_epochs": 200,
+    "lr_cycle_mult": 1,
+    "lr_min": 1e-5,
+    "log_every": 10,
+    "seed": 0
+  }
+}

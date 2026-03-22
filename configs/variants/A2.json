@@ -1,0 +1,105 @@
+{
+  "name": "A2",
+  "model": {
+    "variant_family": "A",
+    "baseline_mode": 2,
+    "latent_sizes": [
+      2,
+      2,
+      2
+    ],
+    "tau": [
+      0.12,
+      0.1,
+      0.11
+    ],
+    "encoder_hidden_size": 64,
+    "history_hidden_size": 32,
+    "controller_hidden_size": 64,
+    "history_embed_size": 64,
+    "prior_hidden_sizes": [
+      64,
+      64
+    ],
+    "posterior_hidden_sizes": [
+      64,
+      64
+    ],
+    "message_dim": 4,
+    "hidden_input_dim": 4,
+    "z0_prior_std": 1.0,
+    "sigma_input_prior": 1.0,
+    "sigma_message_prior": 1.0,
+    "process_noise_floor": 0.001,
+    "process_noise_init": 0.03,
+    "message_source": "task_rate",
+    "message_timing": "lagged",
+    "message_lag": 1,
+    "message_stochastic": true,
+    "use_hidden_inputs": true,
+    "use_initial_condition": true,
+    "coupling_mode": "additive",
+    "baseline_num_basis_within": 6,
+    "baseline_trial_rank": 2,
+    "baseline_l2": 0.0001,
+    "baseline_prefit_num_basis_within": 6,
+    "baseline_prefit_num_basis_across": 5,
+    "baseline_prefit_ridge": 0.001,
+    "baseline_prefit_clip_hz": 150.0,
+    "use_message_bias": true,
+    "use_known_input_bias": true,
+    "use_hidden_input_map": true,
+    "posterior_correction_scale": 1.0,
+    "intrinsic_weight_scale": 1.0,
+    "edge_mask": [
+      [
+        0.0,
+        1.0,
+        1.0
+      ],
+      [
+        1.0,
+        0.0,
+        1.0
+      ],
+      [
+        1.0,
+        1.0,
+        0.0
+      ]
+    ]
+  },
+  "loss": {
+    "beta_traj_final": 0.5,
+    "beta_message_final": 0.02,
+    "beta_hidden_final": 0.2,
+    "beta_z0_final": 0.1,
+    "beta_baseline": 1.0,
+    "beta_message_energy": 1.0,
+    "warmup_epochs": 5,
+    "message_ramp_epochs": 20,
+    "hidden_ramp_epochs": 20,
+    "traj_ramp_epochs": 20,
+    "z0_ramp_epochs": 20,
+    "use_kl_floor": true,
+    "kl_floor": 0.001
+  },
+  "optim": {
+    "learning_rate": 0.002,
+    "weight_decay": 1e-05,
+    "grad_clip_norm": 5.0,
+    "batch_size": 32,
+    "epochs": 80,
+    "seed": 0,
+    "log_every": 10,
+    "eval_every": 10
+  },
+  "data": {
+    "val_fraction": 0.15,
+    "test_fraction": 0.15,
+    "shuffle_seed": 0,
+    "broadcast_single_input": false,
+    "region_input_dims": null,
+    "synthetic_history_bins": 20
+  }
+}
