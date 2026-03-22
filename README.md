@@ -56,33 +56,33 @@ This decomposition is important because the same variance in the spikes can ofte
 
 Let:
 
-- \(i \in \{1,\dots,R\}\) index regions,
-- \(t \in \{1,\dots,T\}\) index time bins,
-- \(b \in \{1,\dots,B\}\) index trials,
-- \(L_i\) be the latent dimension of region \(i\),
-- \(N_i\) be the number of neurons in region \(i\),
-- \(K_i\) be the known-input dimension of region \(i\),
-- \(U\) be the hidden-input dimension,
-- \(M\) be the message dimension.
+- $i \in \{1,\dots,R\}$ index regions,
+- $t \in \{1,\dots,T\}$ index time bins,
+- $b \in \{1,\dots,B\}$ index trials,
+- $L_i$ be the latent dimension of region $i$,
+- $N_i$ be the number of neurons in region $i$,
+- $K_i$ be the known-input dimension of region $i$,
+- $U$ be the hidden-input dimension,
+- $M$ be the message dimension.
 
 The main latent state is
-\[
+$$
 z_{b,i,t} \in \mathbb{R}^{L_i}.
-\]
+$$
 
 Observed spike counts are
-\[
+$$
 y_{b,i,t,n} \in \mathbb{N}.
-\]
+$$
 
 Known exogenous inputs are
-\[
+$$
 k_{b,i,t} \in \mathbb{R}^{K_i},
-\]
+$$
 and hidden inferred inputs are
-\[
+$$
 u_{b,i,t} \in \mathbb{R}^{U}.
-\]
+$$
 
 ---
 
@@ -93,37 +93,37 @@ The implemented model is easiest to understand as a **prior dynamical system**, 
 ### 5.1 Initial condition from pre-trial history
 
 Each region has a pre-trial spike-history encoder. Let
-\[
+$$
 h^{\text{hist}}_{b,i} \in \mathbb{R}^{H_i}
-\]
+$$
 be the history summary from a bidirectional GRU run on the history window.
 
 The initial latent state has a diagonal Gaussian approximate posterior:
-\[
+$$
 q(z_{b,i,0} \mid h^{\text{hist}}_{b,i})
 = \mathcal{N}\big(\mu^{z0}_{b,i},\, \operatorname{diag}(\sigma^{z0}_{b,i})^2\big),
-\]
+$$
 with
-\[
+$$
 \mu^{z0}_{b,i} = W^{z0}_{\mu,i} h^{\text{hist}}_{b,i} + b^{z0}_{\mu,i},
 \qquad
 \sigma^{z0}_{b,i} = \operatorname{softplus}\!\big(W^{z0}_{\sigma,i} h^{\text{hist}}_{b,i} + b^{z0}_{\sigma,i}\big).
-\]
+$$
 
-If `use_initial_condition=False`, the sampled \(z_{b,i,0}\) is replaced by zero in the forward rollout.
+If `use_initial_condition=False`, the sampled $z_{b,i,0}$ is replaced by zero in the forward rollout.
 
 ### 5.2 Task-relevant readout
 
 Each region has a linear latent-to-neuron readout:
-\[
+$$
 \eta^{\text{task}}_{b,i,t} = C_i z_{b,i,t},
 \qquad C_i \in \mathbb{R}^{N_i \times L_i}.
-\]
+$$
 
 The corresponding task-relevant reconstructed rate is
-\[
+$$
 r^{\text{task}}_{b,i,t} = \operatorname{softplus}(\eta^{\text{task}}_{b,i,t}).
-\]
+$$
 
 This quantity is crucial because communication is derived from the **task-relevant** source representation, not from the full nuisance-contaminated rate.
 
@@ -131,110 +131,110 @@ This quantity is crucial because communication is derived from the **task-releva
 
 The code supports two source choices:
 
-- `message_source = "task_rate"`: use \(r^{\text{task}}\),
-- `message_source = "task_lograte"`: use \(\eta^{\text{task}}\).
+- `message_source = "task_rate"`: use $r^{\text{task}}$,
+- `message_source = "task_lograte"`: use $\eta^{\text{task}}$.
 
 All provided variants use:
-\[
+$$
 s_{b,i,t} = r^{\text{task}}_{b,i,t}.
-\]
+$$
 
 Messages are **lagged by one bin**:
-\[
+$$
 m_{j\to i,t} \text{ depends on } s_{j,t-1},
-\]
+$$
 which avoids same-time algebraic loops and gives a clean directed communication path.
 
 ### 5.4 Message inference / generation
 
-For each directed edge \(j \to i\), define a low-dimensional message
-\[
+For each directed edge $j \to i$, define a low-dimensional message
+$$
 m_{b,j\to i,t} \in \mathbb{R}^M.
-\]
+$$
 
 #### Stochastic message family (A and C)
 
 For A and C, the message distribution is diagonal Gaussian:
-\[
+$$
 q(m_{b,j\to i,t} \mid s_{b,j,t-1})
 = \mathcal{N}\big(\mu^m_{b,j\to i,t},\, \operatorname{diag}(\sigma^m_{b,j\to i,t})^2\big),
-\]
+$$
 with
-\[
+$$
 \mu^m_{b,j\to i,t} = W^{m,\mu}_{j\to i} s_{b,j,t-1} + b^{m,\mu}_{j\to i},
-\]
-\[
+$$
+$$
 \sigma^m_{b,j\to i,t} = \operatorname{softplus}\!\big(W^{m,\sigma}_{j\to i} s_{b,j,t-1} + b^{m,\sigma}_{j\to i}\big).
-\]
+$$
 Then
-\[
+$$
 m_{b,j\to i,t} = \mu^m_{b,j\to i,t} + \sigma^m_{b,j\to i,t} \odot \epsilon^m,
 \qquad \epsilon^m \sim \mathcal{N}(0,I).
-\]
+$$
 
 #### Deterministic message family (B)
 
 For B, messages are deterministic:
-\[
+$$
 m_{b,j\to i,t} = W^{m}_{j\to i} s_{b,j,t-1} + b^{m}_{j\to i}.
-\]
+$$
 
 This makes the communication channel easier to interpret geometrically, at the cost of giving up explicit posterior uncertainty over messages.
 
 ### 5.5 Mapping messages into target latent space
 
 Every edge has an additive latent-space map:
-\[
+$$
 a_{b,j\to i,t} = A_{j\to i} m_{b,j\to i,t},
 \qquad A_{j\to i} \in \mathbb{R}^{L_i \times M}.
-\]
+$$
 
-The total additive communication drive into target region \(i\) is
-\[
+The total additive communication drive into target region $i$ is
+$$
 \Delta^{\text{msg}}_{b,i,t} = \sum_{j \neq i} a_{b,j\to i,t}.
-\]
+$$
 
 For family C, each edge also has a gain-like map
-\[
+$$
 g_{b,j\to i,t} = G_{j\to i} m_{b,j\to i,t},
 \qquad G_{j\to i} \in \mathbb{R}^{L_i \times M},
-\]
+$$
 with total gain signal
-\[
+$$
 \Gamma_{b,i,t} = \sum_{j \neq i} g_{b,j\to i,t}.
-\]
+$$
 
 ### 5.6 Hidden inferred inputs
 
 A controller GRU runs per region over time using the current inference signal and latent state:
-\[
+$$
 h^{\text{ctrl}}_{b,i,t} = \operatorname{GRU}\big(h^{\text{ctrl}}_{b,i,t-1},\, [e_{b,i,t}, z_{b,i,t}]\big),
-\]
-where \(e_{b,i,t}\) is the bidirectional sequence encoder feature at time \(t\).
+$$
+where $e_{b,i,t}$ is the bidirectional sequence encoder feature at time $t$.
 
 The controller emits a diagonal Gaussian hidden input posterior:
-\[
+$$
 q(u_{b,i,t} \mid e_{b,i,t}, z_{b,i,t})
 = \mathcal{N}\big(\mu^u_{b,i,t}, \operatorname{diag}(\sigma^u_{b,i,t})^2\big),
-\]
+$$
 with
-\[
+$$
 \mu^u_{b,i,t} = W^{u,\mu}_i h^{\text{ctrl}}_{b,i,t} + b^{u,\mu}_i,
 \qquad
 \sigma^u_{b,i,t} = \operatorname{softplus}\!\big(W^{u,\sigma}_i h^{\text{ctrl}}_{b,i,t} + b^{u,\sigma}_i\big).
-\]
+$$
 
 The sampled hidden input is mapped into latent space via
-\[
+$$
 \Delta^{\text{hid}}_{b,i,t} = H_i u_{b,i,t} + c_i.
-\]
+$$
 
 ### 5.7 Known-input drive
 
 Known exogenous input channels are mapped linearly into latent space:
-\[
+$$
 \Delta^{\text{known}}_{b,i,t} = B_i k_{b,i,t} + d_i.
-\]
+$$
 
 This design deliberately treats different temporal semantics in a unified way:
 
@@ -242,58 +242,58 @@ This design deliberately treats different temporal semantics in a unified way:
 - a **stimulus onset that remains on** is just a step channel,
 - a **task context** is just a sustained channel.
 
-Mathematically, they all enter through \(k_{b,i,t}\); the interpretation comes from how the synthetic data or real dataset defines those channels.
+Mathematically, they all enter through $k_{b,i,t}$; the interpretation comes from how the synthetic data or real dataset defines those channels.
 
 ### 5.8 Prior local dynamics
 
 The prior drift is the interpretable local dynamical system. It has the form
-\[
+$$
 \mu^{\text{prior}}_{b,i,t} = f_i(z_{b,i,t}) + \Delta^{\text{known}}_{b,i,t} + \Delta^{\text{msg}}_{b,i,t}.
-\]
+$$
 
-The local intrinsic field \(f_i\) is implemented as a gated relaxation MLP:
-\[
+The local intrinsic field $f_i$ is implemented as a gated relaxation MLP:
+$$
 g_i(z) = \sigma(W^{g}_i z + b^g_i),
-\]
-\[
+$$
+$$
 \tilde z_i(z) = \tanh\big(W^{o}_i \phi_i(z) + b^o_i\big),
-\]
-\[
+$$
+$$
 f_i(z) = g_i(z) \odot (-z + \tilde z_i(z)).
-\]
+$$
 
 This means the model learns a region-wise nonlinear vector field that can be visualized as a low-dimensional flow.
 
 For family C, the prior drift includes a gain-modulated term:
-\[
+$$
 \mu^{\text{prior}}_{b,i,t} = f_i(z_{b,i,t})
 + \Delta^{\text{known}}_{b,i,t}
 + \Delta^{\text{msg}}_{b,i,t}
 + \tanh(\Gamma_{b,i,t}) \odot z_{b,i,t}.
-\]
+$$
 
 This is the precise mathematical distinction between additive coupling (A/B) and additive-plus-gain coupling (C).
 
 ### 5.9 Posterior correction and latent update
 
 The model does **not** roll out only the prior field during training. Instead, it uses an inference-guided posterior drift:
-\[
+$$
 \mu^{\text{post}}_{b,i,t} = \mu^{\text{prior}}_{b,i,t} + \lambda_{\text{post}} \, c_i^{\text{post}}(z_{b,i,t}, e_{b,i,t}, k_{b,i,t}, \Delta^{\text{msg}}_{b,i,t}),
-\]
-where \(c_i^{\text{post}}\) is another gated MLP and `posterior_correction_scale = \lambda_post` in the code.
+$$
+where $c_i^{\text{post}}$ is another gated MLP and `posterior_correction_scale = \lambda_post` in the code.
 
 The latent update is then
-\[
+$$
 z_{b,i,t+1} = z_{b,i,t}
 + \alpha_i \Big( \mu^{\text{post}}_{b,i,t} + \Delta^{\text{hid}}_{b,i,t} \Big)
 + \sqrt{\alpha_i} \, \sigma^{\text{proc}}_i \odot \epsilon_{b,i,t},
-\]
+$$
 with
-\[
+$$
 \alpha_i = \frac{dt}{\tau_i},
 \qquad
 \epsilon_{b,i,t} \sim \mathcal{N}(0,I).
-\]
+$$
 
 The key modeling choice here is:
 
@@ -306,18 +306,18 @@ This preserves a FINDR-like distinction between an interpretable dynamical law a
 ### 5.10 Observation model
 
 The full log-rate is
-\[
+$$
 \eta^{\text{full}}_{b,i,t} = \eta^{\text{task}}_{b,i,t} + d^{\text{nuis}}_{b,i,t},
-\]
+$$
 and the full rate is
-\[
+$$
 r^{\text{full}}_{b,i,t} = \operatorname{softplus}(\eta^{\text{full}}_{b,i,t}).
-\]
+$$
 
 Observed spike counts are modeled as Poisson:
-\[
+$$
 y_{b,i,t,n} \sim \operatorname{Poisson}\big(dt \cdot r^{\text{full}}_{b,i,t,n}\big).
-\]
+$$
 
 This matters because the model explicitly allows the observation to contain structure that is **not** routed through the task latent state.
 
@@ -326,18 +326,18 @@ This matters because the model explicitly allows the observation to contain stru
 ## 6. Why messages come from task-relevant reconstructed activity
 
 The central hybrid rule is:
-\[
+$$
 \text{messages are inferred from } r^{\text{task}} \text{ or } \eta^{\text{task}}, \text{ not from } r^{\text{full}}.
-\]
+$$
 
 The reason is scientific, not cosmetic.
 
 ### 6.1 Why not from full reconstructed rates?
 
 If messages were inferred from
-\[
+$$
 r^{\text{full}}_{b,i,t} = \operatorname{softplus}(C_i z_{b,i,t} + d^{\text{nuis}}_{b,i,t}),
-\]
+$$
 then nuisance baseline structure could masquerade as communication.
 
 That would make it ambiguous whether an inferred message reflects:
@@ -349,7 +349,7 @@ That would make it ambiguous whether an inferred message reflects:
 
 ### 6.2 Why not directly from latent state?
 
-If messages are inferred directly from \(z_{i,t}\), then communication can use latent directions that help the fit but are only weakly constrained by observed activity.
+If messages are inferred directly from $z_{i,t}$, then communication can use latent directions that help the fit but are only weakly constrained by observed activity.
 
 The design choice here is therefore:
 
@@ -375,15 +375,15 @@ Family A uses:
 - the standard KL hierarchy favoring communication over hidden inputs.
 
 The core equations are:
-\[
+$$
 q(m_{j\to i,t} \mid s_{j,t-1}) = \mathcal{N}(\mu^m, \operatorname{diag}(\sigma^m)^2),
-\]
-\[
+$$
+$$
 \mu^{\text{prior}}_{i,t} = f_i(z_{i,t}) + B_i k_{i,t} + \sum_{j \neq i} A_{j\to i} m_{j\to i,t},
-\]
-\[
+$$
+$$
 \mu^{\text{post}}_{i,t} = \mu^{\text{prior}}_{i,t} + \lambda_{\text{post}} c_i^{\text{post}}(z_{i,t}, e_{i,t}, k_{i,t}, \Delta^{\text{msg}}_{i,t}).
-\]
+$$
 
 ### Why family A exists
 
@@ -411,22 +411,22 @@ Family B changes three things:
 3. hidden-input and state regularization are **stronger**.
 
 The message equation becomes
-\[
+$$
 m_{j\to i,t} = W^m_{j\to i} s_{j,t-1} + b^m_{j\to i},
-\]
+$$
 with additive coupling only:
-\[
+$$
 \mu^{\text{prior}}_{i,t} = f_i(z_{i,t}) + B_i k_{i,t} + \sum_{j \neq i} A_{j\to i} m_{j\to i,t}.
-\]
+$$
 
 ### Why family B exists
 
 B is for the case where the primary output is not uncertainty-aware communication inference but **clean vector fields and geometric interpretation**.
 
 Deterministic messages make it easier to inspect the map
-\[
+$$
 s_{j,t-1} \mapsto m_{j\to i,t} \mapsto \Delta^{\text{msg}}_{i,t}
-\]
+$$
 without an additional stochastic layer.
 
 The stronger regularization and smaller hidden layers push the model toward simpler dynamical explanations.
@@ -442,9 +442,9 @@ Use B when the top priority is phase portraits, slow points, interpretable commu
 ### Definition
 
 Family C keeps the stochastic message machinery of A but augments communication with a gain-like target-state modulation:
-\[
+$$
 \mu^{\text{prior}}_{i,t} = f_i(z_{i,t}) + B_i k_{i,t} + \sum_{j \neq i} A_{j\to i} m_{j\to i,t} + \tanh\!\left(\sum_{j \neq i} G_{j\to i} m_{j\to i,t}\right) \odot z_{i,t}.
-\]
+$$
 
 ### Why family C exists
 
@@ -460,18 +460,18 @@ Use C only after A is stable. It is more expressive, but that extra flexibility 
 
 ## 8. Baseline / nuisance modes 0, 1, 2, and 3
 
-The nuisance term \(d^{\text{nuis}}\) is where the model family differs most across baseline modes.
+The nuisance term $d^{\text{nuis}}$ is where the model family differs most across baseline modes.
 
 ## 8.1 Baseline-0: no nuisance baseline
 
 ### Definition
-\[
+$$
 d^{\text{nuis}}_{b,i,t} = 0.
-\]
+$$
 So
-\[
+$$
 \eta^{\text{full}}_{b,i,t} = C_i z_{b,i,t}.
-\]
+$$
 
 ### Why
 
@@ -493,14 +493,14 @@ If the real data have strong nuisance PSTHs or slow baseline drift, the model ma
 
 ### Definition
 For each region, learn a neuron-wise constant bias:
-\[
+$$
 d^{\text{nuis}}_{b,i,t} = b_i,
 \qquad b_i \in \mathbb{R}^{N_i}.
-\]
+$$
 So
-\[
+$$
 \eta^{\text{full}}_{b,i,t} = C_i z_{b,i,t} + b_i.
-\]
+$$
 
 ### Why
 
@@ -522,25 +522,25 @@ It cannot capture trial-varying or within-trial nuisance rate structure.
 
 ### Definition
 In the current code, baseline-2 is
-\[
+$$
 d^{\text{nuis}}_{b,i,t} = \Phi_t w^{\text{within}}_i + T_i(h^{\text{hist}}_{b,i}),
-\]
+$$
 where:
 
-- \(\Phi_t\) is a fixed raised-cosine time basis,
-- \(w^{\text{within}}_i\) are learned coefficients,
-- \(T_i(h^{\text{hist}}_{b,i})\) is an optional low-rank trial term derived from the history summary.
+- $\Phi_t$ is a fixed raised-cosine time basis,
+- $w^{\text{within}}_i$ are learned coefficients,
+- $T_i(h^{\text{hist}}_{b,i})$ is an optional low-rank trial term derived from the history summary.
 
 More explicitly,
-\[
+$$
 T_i(h^{\text{hist}}_{b,i}) = W^{\text{trial}}_i \tanh(V^{\text{trial}}_i h^{\text{hist}}_{b,i}) + c^{\text{trial}}_i.
-\]
+$$
 This contribution is constant across time within a trial but varies from trial to trial.
 
 So the full rate model is
-\[
+$$
 \eta^{\text{full}}_{b,i,t} = C_i z_{b,i,t} + \Phi_t w^{\text{within}}_i + T_i(h^{\text{hist}}_{b,i}).
-\]
+$$
 
 ### Why
 
@@ -548,7 +548,7 @@ Baseline-2 is the default nuisance model because it is flexible enough to absorb
 
 The loss includes regularization on this branch:
 
-- an \(L_2\) penalty on the within-trial basis weights,
+- an $L_2$ penalty on the within-trial basis weights,
 - a second-difference smoothness penalty on the resulting time curve,
 - a mild regularizer on the trial branch.
 
@@ -570,32 +570,32 @@ If the basis rank is too large, it can absorb task-relevant signal that should l
 Baseline-3 computes a nuisance baseline **before** the model rollout, using only the training split.
 
 It decomposes nuisance rate into an across-trial term and a within-trial term:
-\[
+$$
 r^{\text{nuis}}_{b,i,t,n} = r^{\text{across}}_{b,i,n} + r^{\text{within}}_{i,t,n}.
-\]
+$$
 
 #### Across-trial component
 A radial basis over trial times is fit by ridge regression to mean firing rates across trials:
-\[
+$$
 r^{\text{across}}_{b,i,n} \approx \Psi(b) \, a_{i,n}.
-\]
+$$
 
 #### Within-trial component
 A raised-cosine basis over time is then fit, again by ridge regression, to residual rate after subtracting the across-trial component:
-\[
+$$
 r^{\text{within}}_{i,t,n} \approx \Phi(t) \, c_{i,n}.
-\]
+$$
 
 The result is clipped to a valid positive rate and transformed into log-rate via the inverse softplus:
-\[
+$$
 d^{\text{nuis}}_{b,i,t,n} = \operatorname{softplus}^{-1}\!\big(r^{\text{nuis}}_{b,i,t,n}\big).
-\]
+$$
 
 In baseline-3, the forward model uses
-\[
+$$
 \eta^{\text{full}}_{b,i,t} = C_i z_{b,i,t} + d^{\text{nuis}}_{b,i,t},
-\]
-where \(d^{\text{nuis}}\) is fixed rather than jointly learned.
+$$
+where $d^{\text{nuis}}$ is fixed rather than jointly learned.
 
 ### Why
 
@@ -647,7 +647,7 @@ This keeps the model family broad enough to test the key hypotheses without expl
 ## 10. Training objective
 
 The implemented loss is
-\[
+$$
 \mathcal{L}
 =
 \mathcal{L}_{\text{NLL}}
@@ -656,56 +656,56 @@ The implemented loss is
 + \beta_{\text{hid}} \mathcal{L}_{\text{hid}}
 + \beta_{z0} \mathcal{L}_{z0}
 + \beta_{\text{base}} \mathcal{L}_{\text{base}}.
-\]
+$$
 
 ### 10.1 Poisson observation term
-\[
+$$
 \mathcal{L}_{\text{NLL}}
 = - \sum_{b,i,t,n} \log p(y_{b,i,t,n} \mid r^{\text{full}}_{b,i,t,n}).
-\]
-In code this is the Poisson negative log-likelihood with rate \(dt \cdot r^{\text{full}}\).
+$$
+In code this is the Poisson negative log-likelihood with rate $dt \cdot r^{\text{full}}$.
 
 ### 10.2 Trajectory consistency term
 The model penalizes disagreement between the posterior drift and the interpretable prior drift:
-\[
+$$
 \mathcal{L}_{\text{traj}}
 = \frac{1}{2} \sum_{b,i,t,\ell}
 \frac{\alpha_i \big(\mu^{\text{post}}_{b,i,t,\ell} - \mu^{\text{prior}}_{b,i,t,\ell}\big)^2}{(\sigma^{\text{proc}}_{i,\ell})^2}.
-\]
+$$
 
 This is the core FINDR-like idea that prevents the interpretable prior system from drifting too far from the inference-guided posterior rollout used during training.
 
 ### 10.3 Hidden-input KL
 For variants with hidden inputs,
-\[
+$$
 \mathcal{L}_{\text{hid}}
 = \operatorname{KL}\Big(q(u_{b,i,t}) \;\|\; \mathcal{N}(0, \sigma_u^2 I)\Big).
-\]
+$$
 
 ### 10.4 Initial-condition KL
 If initial-condition inference is enabled,
-\[
+$$
 \mathcal{L}_{z0}
 = \operatorname{KL}\Big(q(z_{b,i,0}) \;\|\; \mathcal{N}(0, \sigma_{z0}^2 I)\Big).
-\]
+$$
 
 ### 10.5 Message regularization
 
 - For **A/C** (stochastic messages):
-\[
+$$
 \mathcal{L}_{\text{msg}}
 = \operatorname{KL}\Big(q(m_{b,j\to i,t}) \;\|\; \mathcal{N}(0, \sigma_m^2 I)\Big).
-\]
+$$
 
 - For **B** (deterministic messages):
-\[
+$$
 \mathcal{L}_{\text{msg}} = \frac{1}{2\sigma_m^2} \|m_{b,j\to i,t}\|^2.
-\]
+$$
 
 ### 10.6 Baseline regularization
 For baseline-2 only, the model adds an explicit regularizer on the nuisance branch:
 
-- \(L_2\) on within-basis weights,
+- $L_2$ on within-basis weights,
 - smoothness via second differences of the within-trial curve,
 - mild weight penalty on the trial branch.
 
@@ -721,9 +721,9 @@ The synthetic generator is designed to stress exactly the ambiguities the model 
 ## 11.1 Regions and state dimensions
 
 The default synthetic benchmark has **3 regions**, each with a 2D latent state:
-\[
+$$
 L_1 = L_2 = L_3 = 2.
-\]
+$$
 Each region has its own intrinsic nonlinear flow, readout, known-input channels, hidden-input mixing, and communication edges.
 
 ## 11.2 Known inputs
@@ -734,7 +734,7 @@ The generator treats all known inputs as explicit time-series channels:
 - region 1: `rule_A`, `rule_B`,
 - region 2: `go_cue`.
 
-Mathematically, these are all just components of \(k_{i,t}\), but semantically they cover:
+Mathematically, these are all just components of $k_{i,t}$, but semantically they cover:
 
 - sparse event-like pulses,
 - sustained step inputs,
@@ -745,34 +745,34 @@ This is important because the implementation should not assume that all exogenou
 ## 11.3 Hidden inputs
 
 Hidden inputs are generated as low-dimensional AR(1) processes with common and region-specific components:
-\[
+$$
 h_t = \rho h_{t-1} + \sigma_h \epsilon_t.
-\]
+$$
 They are then mixed differently into each region. This creates structured unobserved drive that cannot be explained solely by observed inter-region communication.
 
 ## 11.4 Ground-truth local dynamics
 
 Each region uses a FINDR-style gated intrinsic flow:
-\[
+$$
 f_i(z) = \sigma(G_i z + b^g_i) \odot \big(-z + \tanh(F_i z + b^f_i)\big).
-\]
+$$
 The full ground-truth drift is
-\[
+$$
 \dot z_{i,t} = f_i(z_{i,t}) + B_i k_{i,t} + H_i h_{i,t} + \Delta^{\text{msg}}_{i,t}
-\]
+$$
 in the additive scenario.
 
 In the modulatory scenario,
-\[
+$$
 \dot z_{i,t} = f_i(z_{i,t}) + B_i k_{i,t} + H_i h_{i,t} + \Delta^{\text{msg}}_{i,t} + \tanh(\Gamma_{i,t}) \odot z_{i,t}.
-\]
+$$
 
 ## 11.5 Ground-truth communication
 
 Ground-truth messages are emitted from the source region's task-relevant rates with one-bin lag:
-\[
+$$
 m^{\star}_{b,j\to i,t} = W^{\star}_{j\to i} r^{\text{task},\star}_{b,j,t-1}.
-\]
+$$
 Those messages are then mapped additively, and optionally gain-wise, into the target latent dynamics.
 
 This means the synthetic benchmark is aligned with the design goal of the model family rather than being a generic LDS simulator.
@@ -780,9 +780,9 @@ This means the synthetic benchmark is aligned with the design goal of the model 
 ## 11.6 Ground-truth nuisance baseline
 
 The full log-rate used to generate spikes is
-\[
+$$
 \eta^{\text{full},\star}_{b,i,t} = C_i z^{\star}_{b,i,t} + d^{\text{within},\star}_{i,t} + d^{\text{across},\star}_{b,i} + c_i.
-\]
+$$
 Thus the synthetic data include:
 
 - smooth within-trial nuisance structure,
